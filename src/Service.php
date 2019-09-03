@@ -2,6 +2,7 @@
 
 namespace Ttrig\Billmate;
 
+use Closure;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Ttrig\Billmate\Article;
@@ -25,11 +26,20 @@ class Service
         $this->config = config('billmate');
     }
 
-    public function initCheckout(Collection $articles, \Closure $callback = null): ?Checkout
+    public function activatePayment(Order $order): array
     {
+        return $this->call('activatePayment', [
+            'number' => $order->number,
+        ]);
+    }
+
+    public function initCheckout(
+        Collection $articles,
+        Closure $callback = null
+    ): ?Checkout {
         $totalWithoutTax = $articles->sum->price();
         $totalTax = $articles->sum->totalTax();
-        $totalWithTax = $articles->sum->totalWithTax();
+        $totalWithTax = $totalTax + $totalWithoutTax;
 
         $articlesData = $articles->map(function (Article $article) {
             return $article->paymentData();
@@ -68,19 +78,31 @@ class Service
             $callback($data);
         }
 
-        $checkoutData = $this->post('initCheckout', $data);
+        $checkoutData = $this->call('initCheckout', $data);
 
         return new Checkout($checkoutData);
     }
 
     public function getPaymentInfo(Order $order): array
     {
-        return $this->post('getPaymentinfo', [
+        return $this->call('getPaymentinfo', [
             'number' => $order->number,
         ]);
     }
 
-    private function post(string $function, array $data): array
+    public function getPaymentPlans(Article $article = null): array
+    {
+        return $this->call('getPaymentplans', [
+            'PaymentData' => [
+                'currency' => static::CURRENCY_SEK,
+                'country' => static::COUNTRY_SE,
+                'language' => static::LANGUAGE_SV,
+                'totalwithtax' => $article ? $article->totalWithTax() : null,
+            ],
+        ]);
+    }
+
+    public function call(string $function, array $data = []): array
     {
         $postData = [
             'credentials' => [
@@ -102,6 +124,10 @@ class Service
         ]);
 
         $arrayResponse = json_decode($response->getBody(), true);
+
+        if (json_last_error()) {
+            return ['data' => (string) $response->getBody()];
+        }
 
         if (isset($arrayResponse['code'])) {
             throw new BillmateException(

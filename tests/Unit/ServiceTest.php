@@ -29,6 +29,21 @@ class ServiceTest extends TestCase
         $this->hasher = $this->mock(Hasher::class);
     }
 
+    private function makeService(
+        $responseData = [],
+        $verified = true
+    ): BillmateService {
+        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('123abc');
+
+        if (is_bool($verified)) {
+            $this->hasher->expects()->verify(m::type('array'))->andReturn($verified);
+        }
+
+        $response = new Response(200, [], json_encode($responseData));
+
+        return new BillmateService($this->makeClient($response), $this->hasher);
+    }
+
     private function makeClient(?Response $response = null): Client
     {
         $this->container = [];
@@ -44,9 +59,25 @@ class ServiceTest extends TestCase
         return $client;
     }
 
-    private function makeArticles(): object
+    public function test_activatePayment_happy_path()
     {
-        return collect([
+        $this->makeService()->activatePayment(new Order());
+
+        $this->assertEquals(1, count($this->container));
+    }
+
+    public function test_initCheckout_happy_path()
+    {
+        $billmate = $this->makeService([
+            'data' => [
+                'number' => '322',
+                'status' => 'WaitingForPurchase',
+                'orderid' => 'P12345-67',
+                'url' => 'https://billmate.localhost/123/456/test',
+            ],
+        ]);
+
+        $articles = collect([
             new Article([
                 'number' => 1000,
                 'price' => 100,
@@ -58,33 +89,8 @@ class ServiceTest extends TestCase
                 'taxrate' => 0.25,
             ]),
         ]);
-    }
 
-    private function makeResponse(array $data, int $code = 200): Response
-    {
-        return new Response($code, [], json_encode($data));
-    }
-
-    public function test_initCheckout_happy_path()
-    {
-        $this->hasher->expects()->hash(m::type('array'))->andReturn('123abc');
-        $this->hasher->expects()->verify(m::type('array'))->andReturnTrue();
-
-        $response = $this->makeResponse([
-            'credentials' => [
-                'hash' => '123abc',
-            ],
-            'data' => [
-                'number' => '322',
-                'status' => 'WaitingForPurchase',
-                'orderid' => 'P12345-67',
-                'url' => 'https://billmate.localhost/123/456/test',
-            ]
-        ]);
-
-        $billmate = new BillmateService($this->makeClient($response), $this->hasher);
-
-        $billmate->initCheckout($this->makeArticles());
+        $billmate->initCheckout($articles);
 
         $this->assertEquals(1, count($this->container));
 
@@ -96,84 +102,77 @@ class ServiceTest extends TestCase
         $this->assertEquals(75000, data_get($requestBody, 'data.Cart.Total.withtax'));
     }
 
-    public function test_initCheckout_with_closure_to_update_post_data()
+    public function test_initCheckout_with_closure_to_update_data()
     {
-        $this->hasher->expects()->hash(m::type('array'))->andReturn('123abc');
-        $this->hasher->expects()->verify(m::type('array'))->andReturnTrue();
-
-        $response = $this->makeResponse([]);
-
-        $billmate = new BillmateService($this->makeClient($response), $this->hasher);
-
-        $billmate->initCheckout($this->makeArticles(), function (&$data) {
-            data_set($data, 'CheckoutData.terms', 'foobar');
-        });
+        $this->makeService()->initCheckout(
+            collect([new Article()]),
+            function (&$data) {
+                data_set($data, 'CheckoutData.terms', 'foobar');
+            }
+        );
 
         $this->assertEquals(1, count($this->container));
 
         $lastRequest = data_get($this->container, '0.request');
         $lastRequestBody = json_decode($lastRequest->getBody(), true);
+
         $this->assertEquals('foobar', data_get($lastRequestBody, 'data.CheckoutData.terms'));
-    }
-
-    public function test_initCheckout_throws_exception_on_error_code()
-    {
-        $this->expectException(BillmateException::class);
-        $this->expectExceptionMessage('Billmate Error Code:50014.');
-
-        $this->hasher->expects()->hash(m::type('array'))->andReturn('123abc');
-
-        $response = new Response(200, [], json_encode([
-            'code' => '50014',
-            'message' => 'Billmate Error Code:50014.',
-            'logid' => '123',
-        ]));
-
-        $billmate = new BillmateService($this->makeClient($response), $this->hasher);
-
-        $billmate->initCheckout($this->makeArticles());
-
-        $this->assertEquals(1, count($this->container));
     }
 
     public function test_getPaymentInfo_happy_path()
     {
-        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('123abc');
-        $this->hasher->expects()->verify(m::type('array'))->andReturnTrue();
-
-        $response = new Response(200, [], json_encode([
-            'credentials' => [
-                'hash' => '123abc',
-            ],
-            'data' => []
-        ]));
-
-        $billmate = new BillmateService($this->makeClient($response), $this->hasher);
-
-        $billmate->getPaymentInfo(new Order());
+        $this->makeService()->getPaymentInfo(new Order());
 
         $this->assertEquals(1, count($this->container));
     }
 
-    public function test_getPaymentInfo_handles_invalid_response()
+    public function test_getPaymentPlans_with_article()
+    {
+        $this->makeService()->getPaymentPlans(new Article());
+
+        $this->assertEquals(1, count($this->container));
+    }
+
+    public function test_getPaymentPlans_without_article()
+    {
+        $this->makeService()->getPaymentPlans();
+
+        $this->assertEquals(1, count($this->container));
+    }
+
+    public function test_call_throws_exception_on_error_code()
+    {
+        $this->expectException(BillmateException::class);
+        $this->expectExceptionMessage('Billmate Error Code:50014.');
+
+        $response = [
+            'code' => '50014',
+            'message' => 'Billmate Error Code:50014.',
+            'logid' => '123',
+        ];
+
+        $this->makeService($response, null)->call('invalid-request');
+    }
+
+    public function test_call_throws_exception_on_unverified_request()
     {
         $this->expectException(VerificationException::class);
         $this->expectExceptionMessage('Invalid response');
 
-        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('123abc');
-        $this->hasher->expects()->verify(m::type('array'))->andReturnFalse();
+        $this->makeService([], false)->call('invalid-response');
+    }
 
-        $response = new Response(200, [], json_encode([
-            'credentials' => [
-                'hash' => '123abc',
-            ],
-            'data' => []
-        ]));
+    public function test_call_with_non_json_response()
+    {
+        $this->hasher->expects()->hash(m::type('array'))->andReturn('123abc');
+
+        $response = new Response(200, [], 'plain text');
 
         $billmate = new BillmateService($this->makeClient($response), $this->hasher);
 
-        $billmate->getPaymentInfo(new Order());
+        $data = $billmate->call('returns-plain-text');
 
         $this->assertEquals(1, count($this->container));
+        $this->assertEquals(['data' => 'plain text'], $data);
     }
 }
