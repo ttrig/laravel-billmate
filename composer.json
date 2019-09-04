@@ -2,7 +2,7 @@
     "name": "ttrig/laravel-billmate",
     "license": "MIT",
     "homepage": "https://github.com/ttrig/laravel-billmate",
-    "description": "A Laravel 5 package to verify and accept Billmate payments",
+    "description": "Laravel 6 package for working with Billmate API",
     "keywords": ["laravel", "payment", "billmate", "e-commerce", "webshop"],
     "authors": [
         {
@@ -11,8 +11,8 @@
         }
     ],
     "require": {
-        "php": "^7.3",
-        "illuminate/support": "~5.8",
+        "php": "^7.2",
+        "illuminate/support": "^6.0",
         "guzzlehttp/guzzle": "^6.3"
     },
     "require-dev": {
