@@ -5,7 +5,7 @@ return [
     'test' => env('BILLMATE_TEST', true),
     'url' => env('BILLMATE_URL', 'https://api.billmate.se'),
     'version' => env('BILLMATE_VERSION', '2.1.6'),
-    'client' => env('BILLMATE_CLIENT'),
+    'client' => env('BILLMATE_CLIENT', 'ttrig/laravel-billmate'),
 
     'route_prefix' => 'billmate',
     'accept_action' => 'BillmateController@accept',
