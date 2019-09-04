@@ -30,10 +30,10 @@ class ServiceTest extends TestCase
     }
 
     private function makeService(
-        $responseData = [],
-        $verified = true
+        array $responseData = [],
+        ?bool $verified = true
     ): BillmateService {
-        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('123abc');
+        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('...');
 
         if (is_bool($verified)) {
             $this->hasher->expects()->verify(m::type('array'))->andReturn($verified);
@@ -164,7 +164,7 @@ class ServiceTest extends TestCase
 
     public function test_call_with_non_json_response()
     {
-        $this->hasher->expects()->hash(m::type('array'))->andReturn('123abc');
+        $this->hasher->expects()->hash(m::type('array'))->andReturn('...');
 
         $response = new Response(200, [], 'plain text');
 

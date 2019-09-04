@@ -23,7 +23,7 @@ abstract class TestCase extends AbstractPackageTestCase
                 'number' => $order->number ?: '1000',
                 'status' => $order->status ?: 'Created',
                 'orderid' => $order->orderid ?: 'P1234',
-                'url' => empty($order) || ($order->isCancelled() || $order->isFailed())
+                'url' => empty($order) || ($order->cancelled() || $order->failed())
                     ? ''
                     : 'https://billmate.localhost/invoice/12345',
             ],

@@ -19,27 +19,27 @@ class Order extends Fluent
     const BANK = 16;
     const CASH = 32;
 
-    public function isCancelled()
+    public function cancelled()
     {
         return $this->status === static::CANCELLED;
     }
 
-    public function isCreated()
+    public function created()
     {
         return $this->status === static::CREATED;
     }
 
-    public function isFailed()
+    public function failed()
     {
         return $this->status === static::FAILED;
     }
 
-    public function isPaid()
+    public function paid()
     {
         return $this->status === static::PAID;
     }
 
-    public function isPending()
+    public function pending()
     {
         return $this->status === static::PENDING;
     }

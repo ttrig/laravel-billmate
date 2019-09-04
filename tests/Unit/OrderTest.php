@@ -24,11 +24,11 @@ class OrderTest extends TestCase
     public function statusProvider()
     {
         return [
-            ['isCancelled', Order::CANCELLED],
-            ['isCreated', Order::CREATED],
-            ['isFailed', Order::FAILED],
-            ['isPaid', Order::PAID],
-            ['isPending', Order::PENDING],
+            ['cancelled', Order::CANCELLED],
+            ['created', Order::CREATED],
+            ['failed', Order::FAILED],
+            ['paid', Order::PAID],
+            ['pending', Order::PENDING],
         ];
     }
 }
