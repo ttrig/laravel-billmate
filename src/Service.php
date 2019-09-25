@@ -112,7 +112,7 @@ class Service
                 'client' => $this->config['client'],
                 'serverdata' => $this->getServerData(),
                 'time' => microtime(true),
-                'test' => $this->config['test'] ? 1 : 0,
+                'test' => $this->config['test'] ? '1' : '0',
                 'language' => app()->getLocale(),
             ],
             'data' => $data,
