@@ -2,7 +2,7 @@
 
 namespace Ttrig\Billmate\Tests\Controllers;
 
-use Event;
+use Illuminate\Support\Facades\Event;
 use Mockery as m;
 use Ttrig\Billmate\Events\OrderCreated;
 use Ttrig\Billmate\Exceptions\BillmateException;

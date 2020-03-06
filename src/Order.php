@@ -6,18 +6,18 @@ use Illuminate\Support\Fluent;
 
 class Order extends Fluent
 {
-    const CANCELLED = 'Cancelled';
-    const CREATED = 'Created';
-    const FAILED = 'Failed';
-    const PAID = 'Paid';
-    const PENDING = 'Pending';
+    public const CANCELLED = 'Cancelled';
+    public const CREATED = 'Created';
+    public const FAILED = 'Failed';
+    public const PAID = 'Paid';
+    public const PENDING = 'Pending';
 
-    const INVOICE = 1;
-    const INVOICE_SERVICE = 2;
-    const PART_PAYMENT = 4;
-    const CARD = 8;
-    const BANK = 16;
-    const CASH = 32;
+    public const INVOICE = 1;
+    public const INVOICE_SERVICE = 2;
+    public const PART_PAYMENT = 4;
+    public const CARD = 8;
+    public const BANK = 16;
+    public const CASH = 32;
 
     public function cancelled()
     {

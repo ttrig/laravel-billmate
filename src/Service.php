@@ -3,25 +3,23 @@
 namespace Ttrig\Billmate;
 
 use Closure;
-use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use Ttrig\Billmate\Article;
 use Ttrig\Billmate\Exceptions\BillmateException;
 use Ttrig\Billmate\Exceptions\VerificationException;
 
 class Service
 {
-    const CURRENCY_SEK = 'SEK';
-    const COUNTRY_SE = 'SE';
-    const LANGUAGE_SV = 'sv';
+    public const CURRENCY_SEK = 'SEK';
+    public const COUNTRY_SE = 'SE';
+    public const LANGUAGE_SV = 'sv';
 
-    private $client;
     private $hasher;
     private $config;
 
-    public function __construct(Client $client, Hasher $hasher)
+    public function __construct(Hasher $hasher)
     {
-        $this->client = $client;
         $this->hasher = $hasher;
         $this->config = config('billmate');
     }
@@ -40,10 +38,7 @@ class Service
         $totalWithoutTax = $articles->sum->price();
         $totalTax = $articles->sum->totalTax();
         $totalWithTax = $totalTax + $totalWithoutTax;
-
-        $articlesData = $articles->map(function (Article $article) {
-            return $article->paymentData();
-        });
+        $articlesData = $articles->map->paymentData()->toArray();
 
         $data = [
             'CheckoutData' => [
@@ -111,7 +106,7 @@ class Service
                 'version' => $this->config['version'],
                 'client' => $this->config['client'],
                 'serverdata' => $this->getServerData(),
-                'time' => microtime(true),
+                'time' => now()->timestamp,
                 'test' => $this->config['test'] ? '1' : '0',
                 'language' => app()->getLocale(),
             ],
@@ -119,27 +114,23 @@ class Service
             'function' => $function,
         ];
 
-        $response = $this->client->post($this->config['url'], [
-            'json' => $postData,
-        ]);
+        $response = Http::post($this->config['url'], $postData);
 
-        $arrayResponse = json_decode($response->getBody(), true);
-
-        if (json_last_error()) {
-            return ['data' => (string) $response->getBody()];
+        if (! $response->json()) {
+            return ['data' => $response->body()];
         }
 
-        if (isset($arrayResponse['code'])) {
+        if (isset($response['code'])) {
             throw new BillmateException(
-                $arrayResponse['message'] ?? 'Error code ' . $arrayResponse['code']
+                $response['message'] ?? 'Error code ' . $response['code']
             );
         }
 
-        if (! $this->hasher->verify($arrayResponse)) {
+        if (! $this->hasher->verify($response->json())) {
             throw new VerificationException(400, 'Invalid response');
         }
 
-        return $arrayResponse['data'] ?? [];
+        return $response['data'] ?? [];
     }
 
     private function getServerData(): array
