@@ -25,6 +25,7 @@ class Article extends Fluent
     {
         return $this->totalWithoutTax() * ($this->taxrate() / 100);
     }
+
     public function totalWithTax(): int
     {
         return $this->totalWithoutTax() + $this->totalTax();

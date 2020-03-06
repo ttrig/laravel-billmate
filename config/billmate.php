@@ -1,4 +1,5 @@
 <?php
+
 return [
     'id' => env('BILLMATE_ID'),
     'key' => env('BILLMATE_KEY'),

@@ -2,13 +2,11 @@
 
 namespace Tests\Unit\Billmate;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Middleware;
-use GuzzleHttp\Psr7\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Mockery as m;
 use Ttrig\Billmate\Article;
+use Ttrig\Billmate\Checkout;
 use Ttrig\Billmate\Exceptions\BillmateException;
 use Ttrig\Billmate\Exceptions\VerificationException;
 use Ttrig\Billmate\Hasher;
@@ -19,56 +17,140 @@ use Ttrig\Billmate\Tests\TestCase;
 class ServiceTest extends TestCase
 {
     private $hasher;
-    private $history;
-    private $container;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->hasher = $this->mock(Hasher::class);
+
+        $this->hasher
+            ->expects()
+            ->hash(m::type('array'))
+            ->andReturn('hash')
+            ->byDefault();
+
+        $this->hasher
+            ->expects()
+            ->verify(m::type('array'))
+            ->andReturnTrue()
+            ->byDefault();
     }
 
-    private function makeService(
-        array $responseData = [],
-        ?bool $verified = true
-    ): BillmateService {
-        $this->hasher->expects()->hash(m::type('array'))->once()->andReturn('...');
-
-        if (is_bool($verified)) {
-            $this->hasher->expects()->verify(m::type('array'))->andReturn($verified);
-        }
-
-        $response = new Response(200, [], json_encode($responseData));
-
-        return new BillmateService($this->makeClient($response), $this->hasher);
-    }
-
-    private function makeClient(?Response $response = null): Client
+    private function makeService(): BillmateService
     {
-        $this->container = [];
-        $this->history = Middleware::history($this->container);
+        return new BillmateService($this->hasher);
+    }
 
-        $mock = new MockHandler($response ? [$response] : null);
+    public function test_call_sends_request_correctly()
+    {
+        Carbon::setTestNow();
 
-        $handler = HandlerStack::create($mock);
-        $handler->push($this->history);
+        Http::fakeSequence()->push([
+            'credentials' => [
+                'hash' => '3d7506031bac8c67b4fc4750b2f879c6965d595f3',
+            ],
+            'data' => [
+                'foo' => 'bar',
+            ],
+        ]);
 
-        $client = new Client(['handler' => $handler]);
+        $result = $this->makeService()->call('foo', ['bar' => 'baz']);
 
-        return $client;
+        $this->assertEquals(['foo' => 'bar'], $result);
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'POST'
+                && $request->isJson()
+                && $request->url() === 'https://api.billmate.se'
+                && $request->data() === [
+                    'credentials' => [
+                        'id' => null,
+                        'hash' => 'hash',
+                        'version' => '2.1.6',
+                        'client' => 'ttrig/laravel-billmate',
+                        'serverdata' => [
+                            'ip' => '127.0.0.1',
+                            'referer' => null,
+                            'user agent' => 'Symfony',
+                            'method' => 'GET',
+                            'uri' => 'http://localhost/',
+                        ],
+                        'time' => now()->timestamp,
+                        'test' => '1',
+                        'language' => 'en',
+                    ],
+                    'data' => [
+                        'bar' => 'baz',
+                    ],
+                    'function' => 'foo',
+                ];
+        });
+    }
+
+    public function test_call_throws_exception_on_error_code()
+    {
+        $this->expectException(BillmateException::class);
+        $this->expectExceptionMessage('Billmate Error Code:50014.');
+
+        $this->hasher->expects()->verify()->never();
+
+        Http::fakeSequence()->push([
+            'code' => '50014',
+            'message' => 'Billmate Error Code:50014.',
+            'logid' => '123',
+        ]);
+
+        $this->makeService()->call('invalid-request');
+
+        Http::assertSequencesAreEmpty();
+    }
+
+    public function test_call_throws_exception_on_unverified_request()
+    {
+        $this->expectException(VerificationException::class);
+        $this->expectExceptionMessage('Invalid response');
+
+        $this->hasher->expects()->verify(m::type('array'))->andReturnFalse();
+
+        Http::fakeSequence()->push(['response']);
+
+        $this->makeService()->call('invalid-response');
+    }
+
+    public function test_call_with_non_json_response()
+    {
+        $this->hasher->expects()->verify()->never();
+
+        Http::fakeSequence()->push('plain text');
+
+        $result = $this->makeService()->call('returns-plain-text');
+
+        $this->assertEquals(['data' => 'plain text'], $result);
     }
 
     public function test_activatePayment_happy_path()
     {
-        $this->makeService()->activatePayment(new Order());
+        Http::fakeSequence()->push([
+            'data' => [
+                'number' => '123',
+                'status' => 'Factoring',
+                'orderid' => 'P12345-67',
+                'url' => 'https://billmate.localhost/123/456/test',
+            ],
+        ]);
 
-        $this->assertEquals(1, count($this->container));
+        $this->makeService()->activatePayment(new Order(['number' => 123]));
+
+        Http::assertSent(function ($request) {
+            return $request['data']['number'] === 123
+                && $request['function'] === 'activatePayment';
+        });
     }
 
     public function test_initCheckout_happy_path()
     {
-        $billmate = $this->makeService([
+        Http::fakeSequence()->push([
             'data' => [
                 'number' => '322',
                 'status' => 'WaitingForPurchase',
@@ -90,89 +172,93 @@ class ServiceTest extends TestCase
             ]),
         ]);
 
-        $billmate->initCheckout($articles);
+        $checkout = $this->makeService()->initCheckout($articles);
 
-        $this->assertEquals(1, count($this->container));
+        $this->assertInstanceOf(Checkout::class, $checkout);
+        $this->assertEquals('322', $checkout->number);
 
-        $request = data_get($this->container, '0.request');
-        $requestBody = json_decode($request->getBody(), true);
-
-        $this->assertEquals(15000, data_get($requestBody, 'data.Cart.Total.tax'));
-        $this->assertEquals(60000, data_get($requestBody, 'data.Cart.Total.withouttax'));
-        $this->assertEquals(75000, data_get($requestBody, 'data.Cart.Total.withtax'));
+        Http::assertSent(function ($request) {
+            return preg_match('/^P\d{10}-\d\d$/', $request['data']['PaymentData']['orderid'])
+                && count($request['data']['Articles']) === 2
+                && $request['data']['Cart']['Total'] === [
+                    'rounding' => 0,
+                    'tax' => 15000,
+                    'withouttax' => 60000,
+                    'withtax' => 75000,
+                ];
+        });
     }
 
     public function test_initCheckout_with_closure_to_update_data()
     {
-        $this->makeService()->initCheckout(
+        Http::fakeSequence()->push([
+            'data' => [
+                'number' => '322',
+                'status' => 'WaitingForPurchase',
+                'orderid' => 'P12345-67',
+                'url' => 'https://billmate.localhost/123/456/test',
+            ],
+        ]);
+
+        $checkout = $this->makeService()->initCheckout(
             collect([new Article()]),
-            function (&$data) {
-                data_set($data, 'CheckoutData.terms', 'foobar');
-            }
+            fn(&$data) => $data['CheckoutData']['terms'] = 'foobar'
         );
 
-        $this->assertEquals(1, count($this->container));
+        $this->assertInstanceOf(Checkout::class, $checkout);
 
-        $lastRequest = data_get($this->container, '0.request');
-        $lastRequestBody = json_decode($lastRequest->getBody(), true);
-
-        $this->assertEquals('foobar', data_get($lastRequestBody, 'data.CheckoutData.terms'));
+        Http::assertSent(function ($request) {
+            return data_get($request, 'data.CheckoutData.terms') === 'foobar';
+        });
     }
 
     public function test_getPaymentInfo_happy_path()
     {
-        $this->makeService()->getPaymentInfo(new Order());
+        Http::fakeSequence()->push(['data' => ['info']]);
 
-        $this->assertEquals(1, count($this->container));
+        $order = new Order(['number' => '123']);
+
+        $this->assertEquals(['info'], $this->makeService()->getPaymentInfo($order));
+
+        Http::assertSent(fn($request) => $request['data']['number'] === '123');
     }
 
     public function test_getPaymentPlans_with_article()
     {
-        $this->makeService()->getPaymentPlans(new Article());
+        Http::fakeSequence()->push(['data' => ['plans']]);
 
-        $this->assertEquals(1, count($this->container));
+        $article = new Article([
+            'title' => 'Potato',
+            'quantity' => 1,
+            'price' => 10,
+            'taxrate' => 0.25,
+        ]);
+
+        $this->assertEquals(['plans'], $this->makeService()->getPaymentPlans($article));
+
+        Http::assertSent(fn($request) => $request['data'] === [
+            'PaymentData' => [
+                'currency' => 'SEK',
+                'country' => 'SE',
+                'language' => 'sv',
+                'totalwithtax' => 1250,
+            ],
+        ]);
     }
 
     public function test_getPaymentPlans_without_article()
     {
-        $this->makeService()->getPaymentPlans();
+        Http::fakeSequence()->push(['data' => ['plans']]);
 
-        $this->assertEquals(1, count($this->container));
-    }
+        $this->assertEquals(['plans'], $this->makeService()->getPaymentPlans());
 
-    public function test_call_throws_exception_on_error_code()
-    {
-        $this->expectException(BillmateException::class);
-        $this->expectExceptionMessage('Billmate Error Code:50014.');
-
-        $response = [
-            'code' => '50014',
-            'message' => 'Billmate Error Code:50014.',
-            'logid' => '123',
-        ];
-
-        $this->makeService($response, null)->call('invalid-request');
-    }
-
-    public function test_call_throws_exception_on_unverified_request()
-    {
-        $this->expectException(VerificationException::class);
-        $this->expectExceptionMessage('Invalid response');
-
-        $this->makeService([], false)->call('invalid-response');
-    }
-
-    public function test_call_with_non_json_response()
-    {
-        $this->hasher->expects()->hash(m::type('array'))->andReturn('...');
-
-        $response = new Response(200, [], 'plain text');
-
-        $billmate = new BillmateService($this->makeClient($response), $this->hasher);
-
-        $data = $billmate->call('returns-plain-text');
-
-        $this->assertEquals(1, count($this->container));
-        $this->assertEquals(['data' => 'plain text'], $data);
+        Http::assertSent(fn($request) => $request['data'] === [
+            'PaymentData' => [
+                'currency' => 'SEK',
+                'country' => 'SE',
+                'language' => 'sv',
+                'totalwithtax' => null,
+            ],
+        ]);
     }
 }
