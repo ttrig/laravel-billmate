@@ -1,5 +1,5 @@
 <p align="center">
-<a href="https://travis-ci.org/ttrig/laravel-billmate/branches"><img src="https://travis-ci.org/ttrig/laravel-billmate.svg?branch=master" alt="Build Status"></a>
+<a href="https://github.com/ttrig/laravel-billmate/actions"><img src="https://github.com/ttrig/laravel-billmate/workflows/build/badge.svg" alt="Build Status"></a>
 <a href="https://codecov.io/gh/ttrig/laravel-billmate"><img src="https://img.shields.io/codecov/c/github/ttrig/laravel-billmate/master.svg" alt="Codecov"></a>
 <a href="https://packagist.org/packages/ttrig/laravel-billmate"><img alt="Packagist Version" src="https://img.shields.io/packagist/v/ttrig/laravel-billmate"></a>
 <a href="https://github.com/ttrig/laravel-billmate/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/ttrig/laravel-billmate.svg" alt="License"></a>
