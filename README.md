@@ -17,7 +17,7 @@ composer require ttrig/laravel-billmate
 
 ## Configuration
 
-You can publish the configuration file using this command:
+Publish the configuration file using this command:
 
 ```shell
 php artisan vendor:publish --provider="Ttrig\Billmate\ServiceProvider"
@@ -37,15 +37,6 @@ Update `config/billmate.php` to use your own controller(s).
 'accept_action' => 'App\Http\Controllers\BillmateController@accept',
 'cancel_action' => 'App\Http\Controllers\BillmateController@cancel',
 'callback_action' => \Ttrig\Billmate\Controllers\CallbackController::class,
-```
-
-Add the route prefix (defaults to "billmate") to `$except` in
-`App\Http\Middleware\VerifyCsrfToken` to allow request from Billmate.
-
-```php
-protected $except = [
-    '/billmate/*',
-];
 ```
 
 ## General payment flow
@@ -71,10 +62,9 @@ class CheckoutController extends Controller
             'price' => 30,
         ]));
 
-        // try
-        $checkout = $billmate->initCheckout($articles)
-        // ...
-        return view('...', compact('checkout'));
+        $checkout = $billmate->initCheckout($articles);
+
+        return view('checkout', compact('checkout'));
     }
 }
 ```
@@ -129,9 +119,9 @@ class YourRedirectController extends Controller
     public function accept(BillmateService $billmate)
     {
         $order = new BillmateOrder(request()->data);
-        // try
+
         $paymentInfo = $billmate->getPaymentInfo($order);
-        // ...
+
         return view('payment.accept');
     }
 
@@ -157,7 +147,7 @@ protected $listen = [
 ];
 ```
 
-Read more about events at https://laravel.com/docs/5.8/events.
+Read more about events at https://laravel.com/docs/7.x/events.
 
 ## Contributing
 
@@ -166,9 +156,9 @@ be learn, inspire, and create.
 Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+2. Create your Feature Branch (`git checkout -b amazing-feature`)
+3. Commit your Changes (`git commit -m 'Add some amazing feature`)
+4. Push to the Branch (`git push origin amazing-feature`)
 5. Open a Pull Request
 
 ## License
