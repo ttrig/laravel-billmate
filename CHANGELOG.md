@@ -9,3 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add CHANGELOG.md
+
+### Changed
+- Require PHP 7.4 and Laravel 7
+- Replace travis with github actions
