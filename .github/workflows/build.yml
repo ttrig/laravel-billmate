@@ -3,7 +3,15 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Tests
+    name: Testing with Illuminate ${{ matrix.illuminate }}
+    strategy:
+        matrix:
+            illuminate: [8, 7]
+            include:
+                - illuminate: 8
+                  testbench: 5.5
+                - illuminate: 7
+                  testbench: 5.4
     steps:
       - uses: actions/checkout@v2
 
@@ -11,22 +19,24 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.composer/cache/files
-          key: dependencies-composer-${{ hashFiles('composer.lock') }}
+          key: dependencies-composer-${{ matrix.illuminate }}-${{ hashFiles('composer.lock') }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 7.4
           extensions: dom, curl, libxml, mbstring, zip
-          coverage: none
+          coverage: pcov
 
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-interaction --no-suggest --no-ansi --no-progress
+        run: |
+            composer require "illuminate/support:${{ matrix.illuminate }}.*" "graham-campbell/testbench:${{ matrix.testbench }}.*" --no-interaction --no-update
+            composer update --prefer-dist --no-interaction --no-ansi --no-progress
 
       - name: Execute tests
         run: |
           vendor/bin/phpcs
-          vendor/bin/phpunit
+          vendor/bin/phpunit --coverage-clover=coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
