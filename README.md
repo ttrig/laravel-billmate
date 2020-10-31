@@ -147,7 +147,7 @@ protected $listen = [
 ];
 ```
 
-Read more about events at https://laravel.com/docs/7.x/events.
+Read more about events at https://laravel.com/docs/8.x/events.
 
 ## Contributing
 
