@@ -3,34 +3,24 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Testing with Illuminate ${{ matrix.illuminate }}
+    name: Testing with PHP ${{ matrix.php }} and Illuminate ${{ matrix.illuminate }}
     strategy:
         matrix:
+            php: [8.0, 7.4]
             illuminate: [8, 7]
-            include:
-                - illuminate: 8
-                  testbench: 5.5
-                - illuminate: 7
-                  testbench: 5.4
     steps:
       - uses: actions/checkout@v2
-
-      - name: Cache Composer
-        uses: actions/cache@v1
-        with:
-          path: ~/.composer/cache/files
-          key: dependencies-composer-${{ matrix.illuminate }}-${{ hashFiles('composer.lock') }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 7.4
+          php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip
           coverage: pcov
 
       - name: Install Composer dependencies
         run: |
-            composer require "illuminate/support:${{ matrix.illuminate }}.*" "graham-campbell/testbench:${{ matrix.testbench }}.*" --no-interaction --no-update
+            composer require "illuminate/support:${{ matrix.illuminate }}.*" --no-interaction --no-update
             composer update --prefer-dist --no-interaction --no-ansi --no-progress
 
       - name: Execute tests
