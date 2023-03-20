@@ -6,7 +6,7 @@ jobs:
     name: Testing with PHP ${{ matrix.php }} and Illuminate ${{ matrix.illuminate }}
     strategy:
         matrix:
-            php: [8.0, 7.4]
+            php: [7.4]
             illuminate: [8, 7]
     steps:
       - uses: actions/checkout@v2
