@@ -26,17 +26,16 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $routeConfig = [
             'prefix' => config('billmate.route_prefix'),
             'as' => 'billmate.',
-            'middleware' => [VerifyRequest::class],
         ];
 
         $this->app['router']->group($routeConfig, function ($router) {
             $router->post('accept', config('billmate.accept_action'))
                 ->name('accept')
-                ->middleware([TransformRedirectRequest::class]);
+                ->middleware([TransformRedirectRequest::class, VerifyRequest::class]);
 
             $router->post('cancel', config('billmate.cancel_action'))
                 ->name('cancel')
-                ->middleware([TransformRedirectRequest::class]);
+                ->middleware([TransformRedirectRequest::class, VerifyRequest::class]);
 
             $router->post('callback', config('billmate.callback_action'))
                 ->name('callback')
