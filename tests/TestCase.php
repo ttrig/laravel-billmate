@@ -8,7 +8,7 @@ use Ttrig\Billmate\ServiceProvider;
 
 abstract class TestCase extends AbstractPackageTestCase
 {
-    protected function getServiceProviderClass()
+    protected static function getServiceProviderClass(): string
     {
         return ServiceProvider::class;
     }

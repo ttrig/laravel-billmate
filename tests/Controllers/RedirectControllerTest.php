@@ -18,7 +18,7 @@ class RedirectControllerTest extends TestCase
         $this->hasher = $this->mock(Hasher::class);
     }
 
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         $app->config->set('billmate.accept_action', 'Ttrig\Billmate\Tests\RedirectController@accept');
         $app->config->set('billmate.cancel_action', 'Ttrig\Billmate\Tests\RedirectController@cancel');
@@ -41,7 +41,6 @@ class RedirectControllerTest extends TestCase
         $this->call('POST', route('billmate.accept'), $body)
             ->assertOk()
             ->assertSeeText('accept order 1000');
-        ;
     }
 
     public function test_cancel_sad_path()
@@ -61,7 +60,6 @@ class RedirectControllerTest extends TestCase
         $this->call('POST', route('billmate.cancel'), $body)
             ->assertOk()
             ->assertSeeText('cancel order 1000');
-        ;
     }
 
     protected function makeRequestBody(Order $order): array

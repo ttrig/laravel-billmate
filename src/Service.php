@@ -15,12 +15,10 @@ class Service
     public const COUNTRY_SE = 'SE';
     public const LANGUAGE_SV = 'sv';
 
-    private $hasher;
-    private $config;
+    private array $config;
 
-    public function __construct(Hasher $hasher)
+    public function __construct(private Hasher $hasher)
     {
-        $this->hasher = $hasher;
         $this->config = config('billmate');
     }
 
@@ -33,7 +31,7 @@ class Service
 
     public function initCheckout(
         Collection $articles,
-        Closure $callback = null
+        Closure $callback = null,
     ): ?Checkout {
         $totalWithoutTax = $articles->sum->price();
         $totalTax = $articles->sum->totalTax();

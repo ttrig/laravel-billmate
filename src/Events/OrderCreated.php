@@ -6,12 +6,7 @@ use Ttrig\Billmate\Order;
 
 class OrderCreated
 {
-    public $order;
-    public $paymentInfo;
-
-    public function __construct(Order $order, array $paymentInfo)
+    public function __construct(public Order $order, public array $paymentInfo)
     {
-        $this->order = $order;
-        $this->paymentInfo = $paymentInfo;
     }
 }

@@ -3,6 +3,7 @@
 namespace Ttrig\Billmate\Tests;
 
 use GrahamCampbell\TestBenchCore\ServiceProviderTrait;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Ttrig\Billmate\Service as BillmateService;
 use Ttrig\Billmate\Controllers\CallbackController;
 
@@ -27,15 +28,13 @@ class ServiceProviderTest extends TestCase
         $this->assertNotEmpty(view('billmate::iframe'));
     }
 
-    /**
-     * @dataProvider defaultConfigProvider
-     */
+    #[DataProvider('defaultConfigProvider')]
     public function test_default_config($value, $configKey)
     {
         $this->assertEquals($value, $this->app->config->get($configKey));
     }
 
-    public function defaultConfigProvider()
+    public static function defaultConfigProvider()
     {
         return [
             ['billmate', 'billmate.route_prefix'],
