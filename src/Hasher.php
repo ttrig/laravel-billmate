@@ -9,7 +9,7 @@ class Hasher
         return hash_hmac(
             'sha512',
             json_encode($data),
-            config('billmate.key')
+            config('billmate.key'),
         );
     }
 
