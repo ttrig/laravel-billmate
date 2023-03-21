@@ -22,19 +22,10 @@ class ServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->hasher = $this->mock(Hasher::class);
-
-        $this->hasher
-            ->expects()
-            ->hash(m::type('array'))
-            ->andReturn('hash')
-            ->byDefault();
-
-        $this->hasher
-            ->expects()
-            ->verify(m::type('array'))
-            ->andReturnTrue()
-            ->byDefault();
+        $this->hasher = $this->mock(Hasher::class, function ($mock) {
+            $mock->expects()->hash(m::type('array'))->andReturn('hash')->byDefault();
+            $mock->expects()->verify(m::type('array'))->andReturnTrue()->byDefault();
+        });
     }
 
     private function makeService(): BillmateService
@@ -59,33 +50,32 @@ class ServiceTest extends TestCase
 
         $this->assertEquals(['foo' => 'bar'], $result);
 
-        Http::assertSent(function ($request) {
-            return $request->method() === 'POST'
-                && $request->isJson()
-                && $request->url() === 'https://api.billmate.se'
-                && $request->data() === [
-                    'credentials' => [
-                        'id' => null,
-                        'hash' => 'hash',
-                        'version' => '2.1.6',
-                        'client' => 'ttrig/laravel-billmate',
-                        'serverdata' => [
-                            'ip' => '127.0.0.1',
-                            'referer' => null,
-                            'user agent' => 'Symfony',
-                            'method' => 'GET',
-                            'uri' => 'http://localhost/',
-                        ],
-                        'time' => now()->timestamp,
-                        'test' => '1',
-                        'language' => 'en',
+        Http::assertSent(fn ($request)
+            => $request->method() === 'POST'
+            && $request->isJson()
+            && $request->url() === 'https://api.billmate.se'
+            && $request->data() === [
+                'credentials' => [
+                    'id' => null,
+                    'hash' => 'hash',
+                    'version' => '2.1.6',
+                    'client' => 'ttrig/laravel-billmate',
+                    'serverdata' => [
+                        'ip' => '127.0.0.1',
+                        'referer' => null,
+                        'user agent' => 'Symfony',
+                        'method' => 'GET',
+                        'uri' => 'http://localhost/',
                     ],
-                    'data' => [
-                        'bar' => 'baz',
-                    ],
-                    'function' => 'foo',
-                ];
-        });
+                    'time' => now()->timestamp,
+                    'test' => '1',
+                    'language' => 'en',
+                ],
+                'data' => [
+                    'bar' => 'baz',
+                ],
+                'function' => 'foo',
+            ]);
     }
 
     public function test_call_throws_exception_on_error_code()
@@ -142,10 +132,9 @@ class ServiceTest extends TestCase
 
         $this->makeService()->activatePayment(new Order(['number' => 123]));
 
-        Http::assertSent(function ($request) {
-            return $request['data']['number'] === 123
-                && $request['function'] === 'activatePayment';
-        });
+        Http::assertSent(fn ($request)
+            => $request['data']['number'] === 123
+            && $request['function'] === 'activatePayment');
     }
 
     public function test_initCheckout_happy_path()
@@ -177,16 +166,15 @@ class ServiceTest extends TestCase
         $this->assertInstanceOf(Checkout::class, $checkout);
         $this->assertEquals('322', $checkout->number);
 
-        Http::assertSent(function ($request) {
-            return preg_match('/^P\d{10}-\d\d$/', $request['data']['PaymentData']['orderid'])
-                && count($request['data']['Articles']) === 2
-                && $request['data']['Cart']['Total'] === [
-                    'rounding' => 0,
-                    'tax' => 15000,
-                    'withouttax' => 60000,
-                    'withtax' => 75000,
-                ];
-        });
+        Http::assertSent(fn ($request)
+            => preg_match('/^P\d{10}-\d\d$/', $request['data']['PaymentData']['orderid'])
+            && count($request['data']['Articles']) === 2
+            && $request['data']['Cart']['Total'] === [
+                'rounding' => 0,
+                'tax' => 15000,
+                'withouttax' => 60000,
+                'withtax' => 75000,
+            ]);
     }
 
     public function test_initCheckout_with_closure_to_update_data()
@@ -202,14 +190,14 @@ class ServiceTest extends TestCase
 
         $checkout = $this->makeService()->initCheckout(
             collect([new Article()]),
-            fn(&$data) => $data['CheckoutData']['terms'] = 'foobar'
+            fn (&$data) => $data['CheckoutData']['terms'] = 'foobar'
         );
 
         $this->assertInstanceOf(Checkout::class, $checkout);
 
-        Http::assertSent(function ($request) {
-            return data_get($request, 'data.CheckoutData.terms') === 'foobar';
-        });
+        Http::assertSent(
+            fn ($request) => data_get($request, 'data.CheckoutData.terms') === 'foobar'
+        );
     }
 
     public function test_getPaymentInfo_happy_path()
@@ -236,7 +224,7 @@ class ServiceTest extends TestCase
 
         $this->assertEquals(['plans'], $this->makeService()->getPaymentPlans($article));
 
-        Http::assertSent(fn($request) => $request['data'] === [
+        Http::assertSent(fn ($request) => $request['data'] === [
             'PaymentData' => [
                 'currency' => 'SEK',
                 'country' => 'SE',
@@ -252,7 +240,7 @@ class ServiceTest extends TestCase
 
         $this->assertEquals(['plans'], $this->makeService()->getPaymentPlans());
 
-        Http::assertSent(fn($request) => $request['data'] === [
+        Http::assertSent(fn ($request) => $request['data'] === [
             'PaymentData' => [
                 'currency' => 'SEK',
                 'country' => 'SE',

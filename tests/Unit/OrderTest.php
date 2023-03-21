@@ -2,14 +2,13 @@
 
 namespace Ttrig\Billate\Tests\Unit;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Ttrig\Billmate\Order;
 use Ttrig\Billmate\Tests\TestCase;
 
 class OrderTest extends TestCase
 {
-    /**
-     * @dataProvider statusProvider
-     */
+    #[DataProvider('statusProvider')]
     public function test_statuses($method, $status)
     {
         $order = new Order();
@@ -21,7 +20,7 @@ class OrderTest extends TestCase
         $this->assertTrue($order->$method());
     }
 
-    public function statusProvider()
+    public static function statusProvider()
     {
         return [
             ['cancelled', Order::CANCELLED],

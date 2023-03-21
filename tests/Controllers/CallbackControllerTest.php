@@ -13,6 +13,8 @@ use Ttrig\Billmate\Tests\TestCase;
 
 class CallbackControllerTest extends TestCase
 {
+    private $billmate;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -21,11 +23,9 @@ class CallbackControllerTest extends TestCase
 
         $this->billmate = $this->mock(Service::class);
 
-        $this->hasher = $this->mock(Hasher::class)
-            ->expects()
-            ->verify(m::type('array'))
-            ->andReturnTrue()
-        ;
+        $this->mock(Hasher::class, function ($mock) {
+            $mock->expects()->verify(m::type('array'))->andReturnTrue();
+        });
     }
 
     public function test_callback_happy_path()
@@ -42,17 +42,15 @@ class CallbackControllerTest extends TestCase
         $this->billmate
             ->expects()
             ->getPaymentInfo(m::type(Order::class))
-            ->andReturn($paymentInfo)
-        ;
+            ->andReturn($paymentInfo);
 
         $body = $this->makeRequestBody($order);
 
         $this->call('POST', route('billmate.callback'), $body)->assertStatus(204);
 
-        Event::assertDispatched(OrderCreated::class, function ($event) use ($order, $paymentInfo) {
-            return $event->order['number'] === $order['number']
-                && $event->paymentInfo === $paymentInfo;
-        });
+        Event::assertDispatched(OrderCreated::class, fn ($event)
+            => $event->order['number'] === $order['number']
+            && $event->paymentInfo === $paymentInfo);
     }
 
     public function test_callback_handles_client_error()
@@ -60,8 +58,7 @@ class CallbackControllerTest extends TestCase
         $this->billmate
             ->expects()
             ->getPaymentInfo(m::type(Order::class))
-            ->andThrows(BillmateException::class, 'Client error')
-        ;
+            ->andThrows(BillmateException::class, 'Client error');
 
         $body = $this->makeRequestBody(new Order());
 

@@ -3,29 +3,23 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Testing with PHP ${{ matrix.php }} and Illuminate ${{ matrix.illuminate }}
-    strategy:
-        matrix:
-            php: [7.4]
-            illuminate: [8, 7]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: 8.2
           extensions: dom, curl, libxml, mbstring, zip
           coverage: pcov
 
       - name: Install Composer dependencies
         run: |
-            composer require "illuminate/support:${{ matrix.illuminate }}.*" --no-interaction --no-update
             composer update --prefer-dist --no-interaction --no-ansi --no-progress
 
       - name: Execute tests
         run: |
-          vendor/bin/phpcs
+          vendor/bin/pint --test -v
           vendor/bin/phpunit --coverage-clover=coverage.xml
 
       - name: Upload coverage to Codecov

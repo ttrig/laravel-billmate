@@ -8,9 +8,8 @@ use Ttrig\Billmate\Exceptions\VerificationException;
 
 class VerifyRequest
 {
-    public function __construct(Hasher $hasher)
+    public function __construct(public Hasher $hasher)
     {
-        $this->hasher = $hasher;
     }
 
     public function handle($request, Closure $next)
