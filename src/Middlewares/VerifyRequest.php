@@ -3,8 +3,8 @@
 namespace Ttrig\Billmate\Middlewares;
 
 use Closure;
-use Ttrig\Billmate\Hasher;
 use Ttrig\Billmate\Exceptions\VerificationException;
+use Ttrig\Billmate\Hasher;
 
 class VerifyRequest
 {

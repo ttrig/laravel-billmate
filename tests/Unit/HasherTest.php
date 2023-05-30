@@ -32,7 +32,7 @@ class HasherTest extends TestCase
                 'hash' => $hash,
             ],
             'data' => [
-                'foo' => 'bar'
+                'foo' => 'bar',
             ],
         ]));
     }
@@ -46,7 +46,7 @@ class HasherTest extends TestCase
                 'hash' => $hash,
             ],
             'data' => [
-                'bar' => 'foo'
+                'bar' => 'foo',
             ],
         ]));
     }

@@ -208,7 +208,7 @@ class ServiceTest extends TestCase
 
         $this->assertEquals(['info'], $this->makeService()->getPaymentInfo($order));
 
-        Http::assertSent(fn($request) => $request['data']['number'] === '123');
+        Http::assertSent(fn ($request) => $request['data']['number'] === '123');
     }
 
     public function test_getPaymentPlans_with_article()

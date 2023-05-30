@@ -4,8 +4,8 @@ namespace Ttrig\Billmate\Tests;
 
 use GrahamCampbell\TestBenchCore\ServiceProviderTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Ttrig\Billmate\Service as BillmateService;
 use Ttrig\Billmate\Controllers\CallbackController;
+use Ttrig\Billmate\Service as BillmateService;
 
 class ServiceProviderTest extends TestCase
 {

@@ -17,6 +17,7 @@ class CallbackController
             $paymentInfo = $billmate->getPaymentInfo($order);
         } catch (BillmateException $exception) {
             logger()->critical($exception->getMessage());
+
             return response(null, 400);
         }
 

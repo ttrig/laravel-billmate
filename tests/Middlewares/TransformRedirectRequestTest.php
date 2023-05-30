@@ -3,8 +3,8 @@
 namespace Ttrig\Billmate\Tests\Middlewares;
 
 use Illuminate\Http\Request;
-use Ttrig\Billmate\Tests\TestCase;
 use Ttrig\Billmate\Middlewares\TransformRedirectRequest;
+use Ttrig\Billmate\Tests\TestCase;
 
 class TransformRedirectRequestTest extends TestCase
 {
@@ -26,7 +26,7 @@ class TransformRedirectRequestTest extends TestCase
                     ],
                     'data' => [
                         'foo' => 'bar',
-                    ]
+                    ],
                 ],
                 $request->all()
             );

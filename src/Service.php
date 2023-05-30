@@ -5,7 +5,6 @@ namespace Ttrig\Billmate;
 use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
-use Ttrig\Billmate\Article;
 use Ttrig\Billmate\Exceptions\BillmateException;
 use Ttrig\Billmate\Exceptions\VerificationException;
 
