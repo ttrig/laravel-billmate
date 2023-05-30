@@ -33,7 +33,7 @@ abstract class TestCase extends AbstractPackageTestCase
     protected function makePaymentInfo(Order $order): array
     {
         return [
-            "credentials" => [
+            'credentials' => [
                 'hash' => '...',
             ],
             'data' => [

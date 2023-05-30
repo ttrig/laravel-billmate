@@ -2,8 +2,8 @@
 
 namespace Ttrig\Billmate;
 
-use Ttrig\Billmate\Middlewares\VerifyRequest;
 use Ttrig\Billmate\Middlewares\TransformRedirectRequest;
+use Ttrig\Billmate\Middlewares\VerifyRequest;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {

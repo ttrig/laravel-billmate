@@ -54,7 +54,7 @@ class VerifyRequestTest extends TestCase
             ],
             'data' => [
                 'foo' => 'bar',
-            ]
+            ],
         ]);
     }
 }
